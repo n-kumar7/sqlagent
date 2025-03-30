@@ -122,9 +122,13 @@ class AIQueryGenerator:
         :return: A tuple (query, comment).
         """
         logger.debug("Extracting SQL query and comment from LLM output: %s", llm_output)
+        # If no fenced code block is in the output, treat it as no SQL.
+        if "```" not in llm_output:
+            logger.debug("No code fence found in LLM output.")
+            return "", "No purpose comment provided by LLM"
         text = extract_fenced_code(llm_output, language="sql")
-        if not text.strip():  # Handle case where no fenced code block is found
-            logger.debug("No fenced code block found in LLM output.")
+        if not text.strip():
+            logger.debug("Fenced code is empty.")
             return "", "No purpose comment provided by LLM"
         lines = text.splitlines()
         comment = None
@@ -134,7 +138,7 @@ class AIQueryGenerator:
                 comment = line.strip().lstrip("-").strip()
                 # Strip "Purpose: " prefix if present
                 if comment.lower().startswith("purpose:"):
-                    comment = comment[len("Purpose:"):].strip()
+                    comment = comment[len("purpose:"):].strip()
             else:
                 query_lines.append(line)
         if not comment:
@@ -196,8 +200,8 @@ When you are done, respond with "DONE" (outside any code block).
                 break
             query_str, comment = self._extract_sql_query_and_comment(llm_output)
             if not query_str.strip():  # Skip if the query is empty
-                logger.warning("No SQL found in LLM output; skipping this query.")
-                continue
+                logger.warning("No SQL found in LLM output; stopping query generation.")
+                break
             logger.debug("Placing query onto queue: %s", query_str)
             query_count += 1
             self._log_query_to_file(query_str, comment, query_count)

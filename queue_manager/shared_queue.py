@@ -5,6 +5,9 @@ to enable inter-process communication.
 """
 
 import multiprocessing
+import logging
+
+logger = logging.getLogger(__name__)
 
 class SharedQueue:
     """
@@ -14,6 +17,8 @@ class SharedQueue:
     def __init__(self):
         """Initialize the shared queue."""
         self.queue = multiprocessing.Queue()
+        self._size = 0  # Track the number of items in the queue
+        logger.debug("Initialized SharedQueue with size %d", self._size)
 
     def put(self, item):
         """
@@ -22,6 +27,8 @@ class SharedQueue:
         :param item: The item to place on the queue.
         """
         self.queue.put(item)
+        self._size += 1
+        logger.debug("Item added to queue. New size: %d", self._size)
 
     def get(self, block=True, timeout=None):
         """
@@ -31,7 +38,11 @@ class SharedQueue:
         :param timeout: Timeout in seconds if blocking.
         :return: The item from the queue.
         """
-        return self.queue.get(block, timeout)
+        item = self.queue.get(block, timeout)
+        if self._size > 0:  # Safeguard against going negative
+            self._size -= 1
+        logger.debug("Item removed from queue. New size: %d", self._size)
+        return item
 
     def empty(self) -> bool:
         """
@@ -39,4 +50,4 @@ class SharedQueue:
 
         :return: True if the queue is empty, False otherwise.
         """
-        return self.queue.empty()
+        return self._size == 0

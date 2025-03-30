@@ -16,24 +16,24 @@ class DummyAIQueryGenerator(AIQueryGenerator):
         self.model_name = "dummy-model"
         self.temperature = 0.0
         self.schema_text = "Dummy schema for testing"
-        self.query_count = 0  # Track the number of queries generated
-    
-    def _generate_llm_message(self, messages):
-        # Return a different response for each call to simulate multiple queries
-        if self.query_count == 0:
-            self.query_count += 1
-            return """```sql
+        # Use a fixed responses list to ensure exactly two valid queries, then "DONE"
+        self.responses = [
+            """```sql
 -- Purpose: Dummy test query 1
 SELECT * FROM dummy_table_1;
-```"""
-        elif self.query_count == 1:
-            self.query_count += 1
-            return """```sql
+```""",
+            """```sql
 -- Purpose: Dummy test query 2
 SELECT * FROM dummy_table_2;
-```"""
-        else:
-            return "DONE"
+```""",
+            "DONE"
+        ]
+        self.response_index = 0
+
+    def _generate_llm_message(self, messages):
+        response = self.responses[self.response_index]
+        self.response_index += 1
+        return response
 
 class TestAgent(unittest.TestCase):
     def setUp(self):
