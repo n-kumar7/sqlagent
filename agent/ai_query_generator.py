@@ -121,20 +121,26 @@ class AIQueryGenerator:
         :param llm_output: The output text from the LLM.
         :return: A tuple (query, comment).
         """
+        logger.debug("Extracting SQL query and comment from LLM output: %s", llm_output)
         text = extract_fenced_code(llm_output, language="sql")
+        if not text.strip():  # Handle case where no fenced code block is found
+            logger.debug("No fenced code block found in LLM output.")
+            return "", "No purpose comment provided by LLM"
         lines = text.splitlines()
         comment = None
         query_lines = []
         for line in lines:
             if line.strip().startswith("--") and comment is None:
                 comment = line.strip().lstrip("-").strip()
+                # Strip "Purpose: " prefix if present
+                if comment.lower().startswith("purpose:"):
+                    comment = comment[len("Purpose:"):].strip()
             else:
                 query_lines.append(line)
         if not comment:
             comment = "No purpose comment provided by LLM"
         query = "\n".join(query_lines).strip()
-        if not query:
-            query = text
+        logger.debug("Extracted query: '%s', comment: '%s'", query, comment)
         return query, comment
 
     def _log_query_to_file(self, query: str, comment: str, index: int):
@@ -184,13 +190,15 @@ When you are done, respond with "DONE" (outside any code block).
             messages.append({"role": "user", "content": user_prompt})
             llm_output = self._generate_llm_message(messages)
             messages.append({"role": "assistant", "content": llm_output})
+            logger.debug("LLM output: %s", llm_output)
             if "DONE" in llm_output.upper():
                 logger.info("LLM indicated it is done generating queries.")
                 break
             query_str, comment = self._extract_sql_query_and_comment(llm_output)
-            if not query_str.strip():
-                logger.warning("No SQL found in LLM output; stopping generation.")
-                break
+            if not query_str.strip():  # Skip if the query is empty
+                logger.warning("No SQL found in LLM output; skipping this query.")
+                continue
+            logger.debug("Placing query onto queue: %s", query_str)
             query_count += 1
             self._log_query_to_file(query_str, comment, query_count)
             msg = QueryMessage(query=query_str, comment=comment)
