@@ -65,6 +65,7 @@ def setup_logging():
                 "class": "logging.FileHandler",
                 "formatter": "structured",
                 "filename": "logs/app.log",
+                "mode": "w",  # Change to write mode so that logs don't append
                 "level": "DEBUG",
             }
         },
