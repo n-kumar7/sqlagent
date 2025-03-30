@@ -4,18 +4,19 @@ This module defines the AIQueryGenerator class which uses an LLM to generate SQL
 and discovered database schema. It logs each query to a file and places them as QueryMessage objects on a shared queue.
 """
 
-import os
+from pathlib import Path
 import re
 import psycopg2
 import openai
-from typing import Dict, List
 import logging
+from typing import Dict, List
 
 from utils.global_utils import extract_fenced_code, current_timestamp
 from queue_manager.query_message import QueryMessage
 from queue_manager.shared_queue import SharedQueue
 
 logger = logging.getLogger(__name__)
+
 
 class AIQueryGenerator:
     """
@@ -41,11 +42,12 @@ class AIQueryGenerator:
         """
         self.connection_string = connection_string
         self.shared_queue = shared_queue
-        self.logs_dir = logs_dir
+        # Initialize logs_dir as a Path object and ensure it exists.
+        self.logs_dir = Path(logs_dir)
+        self.logs_dir.mkdir(parents=True, exist_ok=True)
         self.model_name = model_name
         self.temperature = temperature
 
-        os.makedirs(self.logs_dir, exist_ok=True)
         try:
             self.conn = psycopg2.connect(self.connection_string)
             self.conn.autocommit = True
@@ -145,9 +147,8 @@ class AIQueryGenerator:
         """
         timestamp = current_timestamp()
         filename = f"query_{index}_{timestamp}.sql"
-        filepath = os.path.join(self.logs_dir, filename)
-        with open(filepath, "w", encoding="utf-8") as f:
-            f.write(f"-- {comment}\n{query}\n")
+        filepath = self.logs_dir / filename
+        filepath.write_text(f"-- {comment}\n{query}\n", encoding="utf-8")
         logger.info("Logged query #%d to file: %s", index, filename)
 
     def generate_queries(self, goal: str, max_queries: int = 10):
@@ -197,6 +198,7 @@ When you are done, respond with "DONE" (outside any code block).
             logger.info("Placed query #%d on shared queue: %s", query_count, msg)
         logger.info("Finished generating %d queries.", query_count)
 
+
 def main():
     """
     Main function for testing the AIQueryGenerator directly.
@@ -211,6 +213,7 @@ def main():
     while not shared_q.empty():
         msg = shared_q.get()
         print("Queue item:", msg)
+
 
 if __name__ == "__main__":
     main()
