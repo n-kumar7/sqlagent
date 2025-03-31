@@ -2,3 +2,7 @@ __pycache__/
 logs/
 .sqlagent-env/
 tpc-data/
+config/
+build/
+dist/
+*.egg-info/

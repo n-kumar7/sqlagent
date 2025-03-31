@@ -4,75 +4,37 @@ services:
   app:
     build: .
     container_name: my_app
-    # Remove TIG dependencies
-    # depends_on:
-    #   - influxdb
-    #   - telegraf
-    #   - grafana
-    environment:
-      - OPENAI_API_KEY=YOUR_OPENAI_API_KEY
+    depends_on:
+      - postgres
+    entrypoint: ["/app/entrypoint.sh"]
+    command: ["python", "-m", "app.main"]  # run main from the app package
     volumes:
       - ./logs/sql:/app/logs/sql
       - ./logs/runner:/app/logs/runner
+      - ./config/api_key.txt:/app/config/api_key.txt:ro  # mount the API key file
     networks:
-      - tig_net
+      - default
 
   postgres:
     image: postgres:13
     container_name: postgres
+    command: ["postgres", "-c", "max_wal_size=2GB"]
     environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: pass
-      POSTGRES_DB: mydb
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=pass
+      - POSTGRES_DB=mydb
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
-      - ./postgres/init:/docker-entrypoint-initdb.d  # Mount to auto-run tpcds.sql on first start
-      - ./tpc-data:/tpc-data                           # Mount for tpc-data files
+      - ./postgres/init:/docker-entrypoint-initdb.d
+      - ./tpc-data:/tpc-data
     networks:
-      - tig_net
-
-  # TIG stack services turned off for now
-  # influxdb:
-  #   image: influxdb:1.8
-  #   container_name: influxdb
-  #   ports:
-  #     - "8086:8086"
-  #   volumes:
-  #     - influxdb-data:/var/lib/influxdb
-  #   networks:
-  #     - tig_net
-
-  # telegraf:
-  #   image: telegraf:1.20
-  #   container_name: telegraf
-  #   volumes:
-  #     - ./telegraf.conf:/etc/telegraf/telegraf.conf:ro
-  #     - /var/run/docker.sock:/var/run/docker.sock:ro
-  #   ports:
-  #     - "8125:8125/udp"
-  #     - "8092:8092/udp"
-  #     - "8094:8094"
-  #   networks:
-  #     - tig_net
-
-  # grafana:
-  #   image: grafana/grafana
-  #   container_name: grafana
-  #   ports:
-  #     - "3000:3000"
-  #   volumes:
-  #     - grafana-data:/var/lib/grafana
-  #   networks:
-  #     - tig_net
+      - default
 
 volumes:
-  # Optionally disable TIG volumes
-  # influxdb-data:
-  # grafana-data:
-  pgdata:  # Added Postgres volume
+  pgdata:
 
 networks:
-  tig_net:
+  default:
     driver: bridge

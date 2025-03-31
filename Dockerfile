@@ -8,15 +8,16 @@ ENV PYTHONUNBUFFERED 1
 # Set the working directory to /app
 WORKDIR /app
 
-# Copy the requirements file first and install dependencies
-COPY requirements.txt /app/
-RUN pip install --upgrade pip && pip install -r requirements.txt
+# Copy the local wheel file and install your app package
+# Ensure the wheel file exists in the "dist" folder (e.g., my_app-0.1.0-py3-none-any.whl)
+COPY dist/my_app-0.1.0-py3-none-any.whl /tmp/
+RUN pip install /tmp/my_app-0.1.0-py3-none-any.whl
 
-# Copy the rest of the application code
+# Copy the remaining application code (optional, if needed for data files, etc.)
 COPY . /app/
 
 # Expose any ports if needed (for example, if your app exposes metrics)
 # EXPOSE 8000
 
 # Run the main application
-CMD ["python", "main.py"]
+CMD ["python", "-m", "app.main"]

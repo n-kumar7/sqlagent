@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS tpcds.dbgen_version
 (
     dv_version                VARCHAR(32),
     dv_create_date            DATE,
-    dv_create_time            TIMESTAMP,
+    dv_create_time            TIME,
     dv_cmdline_args           VARCHAR(200)
 );
 
@@ -615,7 +615,7 @@ COPY tpcds.call_center
 
 COPY tpcds.customer
   FROM '/tpc-data/customer.dat'
-  WITH (FORMAT CSV, DELIMITER '|', NULL '');
+  WITH (FORMAT CSV, DELIMITER '|', NULL '', ENCODING 'WIN1252');
 
 COPY tpcds.web_site
   FROM '/tpc-data/web_site.dat'
