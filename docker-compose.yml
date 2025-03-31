@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   app:
     build: .
@@ -12,13 +10,15 @@ services:
       - ./logs/sql:/app/logs/sql
       - ./logs/runner:/app/logs/runner
       - ./config/api_key.txt:/app/config/api_key.txt:ro  # mount the API key file
+      - ./config/config.json:/app/config/config.json:ro  # mount the config file
     networks:
       - default
 
   postgres:
     image: postgres:13
     container_name: postgres
-    command: ["postgres", "-c", "max_wal_size=2GB"]
+    user: postgres
+    command: ["/usr/local/bin/docker-entrypoint.sh", "postgres", "-c", "max_wal_size=2GB", "-c", "logging_collector=on", "-c", "log_directory=/var/log/postgresql", "-c", "log_filename=postgresql.log"]
     environment:
       - POSTGRES_USER=user
       - POSTGRES_PASSWORD=pass
@@ -29,6 +29,9 @@ services:
       - pgdata:/var/lib/postgresql/data
       - ./postgres/init:/docker-entrypoint-initdb.d
       - ./tpc-data:/tpc-data
+      - ./logs/postgresql:/var/log/postgresql   # mount log directory to host
+    logging:
+      driver: "none"
     networks:
       - default
 

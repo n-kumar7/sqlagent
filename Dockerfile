@@ -1,9 +1,12 @@
 # Use an official Python runtime as a parent image
 FROM python:3.9-slim
 
-# Set environment variables for Python
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
+# Install netcat for entrypoint script (nc command)
+RUN apt-get update && apt-get install -y netcat-openbsd && rm -rf /var/lib/apt/lists/*
+
+# Set environment variables for Python using key=value syntax
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
 
 # Set the working directory to /app
 WORKDIR /app

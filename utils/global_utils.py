@@ -32,7 +32,7 @@ def current_timestamp() -> str:
     """
     return datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
 
-def load_config(config_file: str = "config.json") -> dict:
+def load_config(config_file: str = "config/config.json") -> dict:
     """
     Loads the configuration from a JSON file.
 
