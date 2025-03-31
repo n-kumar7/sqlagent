@@ -2,13 +2,13 @@
 -- Derived from tpc-ds-ddl-example.sql with added COPY commands for data loading.
 
 DROP SCHEMA IF EXISTS tpcds CASCADE;
-CREATE SCHEMA tpcds;
+CREATE SCHEMA IF NOT EXISTS tpcds;
 
 ------------------------------
 -- Table Definitions
 ------------------------------
 
-CREATE TABLE IF NOT EXISTS dbgen_version
+CREATE TABLE IF NOT EXISTS tpcds.dbgen_version
 (
     dv_version                VARCHAR(32),
     dv_create_date            DATE,
@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS dbgen_version
     dv_cmdline_args           VARCHAR(200)
 );
 
-CREATE TABLE IF NOT EXISTS customer_address
+CREATE TABLE IF NOT EXISTS tpcds.customer_address
 (
     ca_address_sk             INT4 NOT NULL,
     ca_address_id             CHAR(16) NOT NULL,
@@ -32,9 +32,9 @@ CREATE TABLE IF NOT EXISTS customer_address
     ca_gmt_offset             NUMERIC(5,2),
     ca_location_type          CHAR(20),
     PRIMARY KEY (ca_address_sk)
-) DISTKEY(ca_address_sk);
+);
 
-CREATE TABLE IF NOT EXISTS customer_demographics
+CREATE TABLE IF NOT EXISTS tpcds.customer_demographics
 (
     cd_demo_sk                INT4 NOT NULL,
     cd_gender                 CHAR(1),
@@ -46,9 +46,9 @@ CREATE TABLE IF NOT EXISTS customer_demographics
     cd_dep_employed_count     INT4,
     cd_dep_college_count      INT4,
     PRIMARY KEY (cd_demo_sk)
-) DISTKEY (cd_demo_sk);
+);
 
-CREATE TABLE IF NOT EXISTS date_dim
+CREATE TABLE IF NOT EXISTS tpcds.date_dim
 (
     d_date_sk                 INTEGER NOT NULL,
     d_date_id                 CHAR(16) NOT NULL,
@@ -79,9 +79,9 @@ CREATE TABLE IF NOT EXISTS date_dim
     d_current_quarter         CHAR(1),
     d_current_year            CHAR(1),
     PRIMARY KEY (d_date_sk)
-) DISTSTYLE ALL;
+);
 
-CREATE TABLE IF NOT EXISTS warehouse
+CREATE TABLE IF NOT EXISTS tpcds.warehouse
 (
     w_warehouse_sk            INTEGER NOT NULL,
     w_warehouse_id            CHAR(16) NOT NULL,
@@ -98,9 +98,9 @@ CREATE TABLE IF NOT EXISTS warehouse
     w_country                 VARCHAR(20),
     w_gmt_offset              DECIMAL(5,2),
     PRIMARY KEY (w_warehouse_sk)
-) DISTSTYLE ALL;
+);
 
-CREATE TABLE IF NOT EXISTS ship_mode
+CREATE TABLE IF NOT EXISTS tpcds.ship_mode
 (
     sm_ship_mode_sk           INTEGER NOT NULL,
     sm_ship_mode_id           CHAR(16) NOT NULL,
@@ -109,9 +109,9 @@ CREATE TABLE IF NOT EXISTS ship_mode
     sm_carrier                CHAR(20),
     sm_contract               CHAR(20),
     PRIMARY KEY (sm_ship_mode_sk)
-) DISTSTYLE ALL;
+);
 
-CREATE TABLE IF NOT EXISTS time_dim
+CREATE TABLE IF NOT EXISTS tpcds.time_dim
 (
     t_time_sk                 INTEGER NOT NULL,
     t_time_id                 CHAR(16) NOT NULL,
@@ -124,25 +124,25 @@ CREATE TABLE IF NOT EXISTS time_dim
     t_sub_shift               CHAR(20),
     t_meal_time               CHAR(20),
     PRIMARY KEY (t_time_sk)
-) DISTSTYLE ALL;
+);
 
-CREATE TABLE IF NOT EXISTS reason
+CREATE TABLE IF NOT EXISTS tpcds.reason
 (
     r_reason_sk               INTEGER NOT NULL,
     r_reason_id               CHAR(16) NOT NULL,
     r_reason_desc             CHAR(100),
     PRIMARY KEY (r_reason_sk)
-) DISTSTYLE ALL;
+);
 
-CREATE TABLE IF NOT EXISTS income_band
+CREATE TABLE IF NOT EXISTS tpcds.income_band
 (
     ib_income_band_sk         INTEGER NOT NULL,
     ib_lower_bound            INTEGER,
     ib_upper_bound            INTEGER,
     PRIMARY KEY (ib_income_band_sk)
-) DISTSTYLE ALL;
+);
 
-CREATE TABLE IF NOT EXISTS item
+CREATE TABLE IF NOT EXISTS tpcds.item
 (
     i_item_sk                 INT4 NOT NULL,
     i_item_id                 CHAR(16) NOT NULL,
@@ -167,9 +167,9 @@ CREATE TABLE IF NOT EXISTS item
     i_manager_id              INT4,
     i_product_name            CHAR(50),
     PRIMARY KEY (i_item_sk)
-) DISTKEY(i_item_sk) SORTKEY(i_category);
+);
 
-CREATE TABLE IF NOT EXISTS store
+CREATE TABLE IF NOT EXISTS tpcds.store
 (
     s_store_sk                INTEGER NOT NULL,
     s_store_id                CHAR(16) NOT NULL,
@@ -201,9 +201,9 @@ CREATE TABLE IF NOT EXISTS store
     s_gmt_offset              DECIMAL(5,2),
     s_tax_precentage          DECIMAL(5,2),
     PRIMARY KEY (s_store_sk)
-) DISTSTYLE ALL;
+);
 
-CREATE TABLE IF NOT EXISTS call_center
+CREATE TABLE IF NOT EXISTS tpcds.call_center
 (
     cc_call_center_sk         INTEGER NOT NULL,
     cc_call_center_id         CHAR(16) NOT NULL,
@@ -218,7 +218,7 @@ CREATE TABLE IF NOT EXISTS call_center
     cc_hours                  CHAR(20),
     cc_manager                VARCHAR(40),
     cc_mkt_id                 INTEGER,
-    cc_mkt_class              CHAR(50),
+    cc_mkt_class              VARCHAR(50),
     cc_mkt_desc               VARCHAR(100),
     cc_market_manager         VARCHAR(40),
     cc_division               INTEGER,
@@ -237,9 +237,9 @@ CREATE TABLE IF NOT EXISTS call_center
     cc_gmt_offset             DECIMAL(5,2),
     cc_tax_percentage         DECIMAL(5,2),
     PRIMARY KEY (cc_call_center_sk)
-) DISTSTYLE ALL;
+);
 
-CREATE TABLE IF NOT EXISTS customer
+CREATE TABLE IF NOT EXISTS tpcds.customer
 (
     c_customer_sk             INT4 NOT NULL,
     c_customer_id             CHAR(16) NOT NULL,
@@ -260,9 +260,9 @@ CREATE TABLE IF NOT EXISTS customer
     c_email_address           CHAR(50),
     c_last_review_date_sk     INT4,
     PRIMARY KEY (c_customer_sk)
-) DISTKEY(c_customer_sk);
+);
 
-CREATE TABLE IF NOT EXISTS web_site
+CREATE TABLE IF NOT EXISTS tpcds.web_site
 (
     web_site_sk               INTEGER NOT NULL,
     web_site_id               CHAR(16) NOT NULL,
@@ -291,9 +291,9 @@ CREATE TABLE IF NOT EXISTS web_site
     web_gmt_offset            DECIMAL(5,2),
     web_tax_percentage        DECIMAL(5,2),
     PRIMARY KEY (web_site_sk)
-) DISTSTYLE ALL;
+);
 
-CREATE TABLE IF NOT EXISTS store_returns
+CREATE TABLE IF NOT EXISTS tpcds.store_returns
 (
     sr_returned_date_sk       INT4,
     sr_return_time_sk         INT4,
@@ -316,9 +316,9 @@ CREATE TABLE IF NOT EXISTS store_returns
     sr_store_credit           NUMERIC(7,2),
     sr_net_loss               NUMERIC(7,2),
     PRIMARY KEY (sr_item_sk, sr_ticket_number)
-) DISTKEY(sr_item_sk) SORTKEY(sr_returned_date_sk);
+);
 
-CREATE TABLE IF NOT EXISTS household_demographics
+CREATE TABLE IF NOT EXISTS tpcds.household_demographics
 (
     hd_demo_sk                INTEGER NOT NULL,
     hd_income_band_sk         INTEGER,
@@ -326,9 +326,9 @@ CREATE TABLE IF NOT EXISTS household_demographics
     hd_dep_count              INTEGER,
     hd_vehicle_count          INTEGER,
     PRIMARY KEY (hd_demo_sk)
-) DISTSTYLE ALL;
+);
 
-CREATE TABLE IF NOT EXISTS web_page
+CREATE TABLE IF NOT EXISTS tpcds.web_page
 (
     wp_web_page_sk            INTEGER NOT NULL,
     wp_web_page_id            CHAR(16) NOT NULL,
@@ -345,9 +345,9 @@ CREATE TABLE IF NOT EXISTS web_page
     wp_image_count            INTEGER,
     wp_max_ad_count           INTEGER,
     PRIMARY KEY (wp_web_page_sk)
-) DISTSTYLE ALL;
+);
 
-CREATE TABLE IF NOT EXISTS promotion
+CREATE TABLE IF NOT EXISTS tpcds.promotion
 (
     p_promo_sk                INTEGER NOT NULL,
     p_promo_id                CHAR(16) NOT NULL,
@@ -369,9 +369,9 @@ CREATE TABLE IF NOT EXISTS promotion
     p_purpose                 CHAR(15),
     p_discount_active         CHAR(1),
     PRIMARY KEY (p_promo_sk)
-) DISTSTYLE ALL;
+);
 
-CREATE TABLE IF NOT EXISTS catalog_page
+CREATE TABLE IF NOT EXISTS tpcds.catalog_page
 (
     cp_catalog_page_sk        INTEGER NOT NULL,
     cp_catalog_page_id        CHAR(16) NOT NULL,
@@ -383,18 +383,18 @@ CREATE TABLE IF NOT EXISTS catalog_page
     cp_description            VARCHAR(100),
     cp_type                   VARCHAR(100),
     PRIMARY KEY (cp_catalog_page_sk)
-) DISTSTYLE ALL;
+);
 
-CREATE TABLE IF NOT EXISTS inventory
+CREATE TABLE IF NOT EXISTS tpcds.inventory
 (
     inv_date_sk               INT4 NOT NULL,
     inv_item_sk               INT4 NOT NULL,
     inv_warehouse_sk          INT4 NOT NULL,
     inv_quantity_on_hand      INT4,
     PRIMARY KEY (inv_date_sk, inv_item_sk, inv_warehouse_sk)
-) DISTKEY(inv_item_sk) SORTKEY(inv_date_sk);
+);
 
-CREATE TABLE IF NOT EXISTS catalog_returns
+CREATE TABLE IF NOT EXISTS tpcds.catalog_returns
 (
     cr_returned_date_sk       INT4,
     cr_returned_time_sk       INT4,
@@ -424,9 +424,9 @@ CREATE TABLE IF NOT EXISTS catalog_returns
     cr_store_credit           NUMERIC(7,2),
     cr_net_loss               NUMERIC(7,2),
     PRIMARY KEY (cr_item_sk, cr_order_number)
-) DISTKEY(cr_item_sk) SORTKEY(cr_returned_date_sk);
+);
 
-CREATE TABLE IF NOT EXISTS web_returns
+CREATE TABLE IF NOT EXISTS tpcds.web_returns
 (
     wr_returned_date_sk       INT4,
     wr_returned_time_sk       INT4,
@@ -453,9 +453,9 @@ CREATE TABLE IF NOT EXISTS web_returns
     wr_account_credit         NUMERIC(7,2),
     wr_net_loss               NUMERIC(7,2),
     PRIMARY KEY (wr_item_sk, wr_order_number)
-) DISTKEY(wr_order_number) SORTKEY(wr_returned_date_sk);
+);
 
-CREATE TABLE IF NOT EXISTS web_sales
+CREATE TABLE IF NOT EXISTS tpcds.web_sales
 (
     ws_sold_date_sk           INT4,
     ws_sold_time_sk           INT4,
@@ -492,9 +492,9 @@ CREATE TABLE IF NOT EXISTS web_sales
     ws_net_paid_inc_ship_tax  NUMERIC(7,2),
     ws_net_profit             NUMERIC(7,2),
     PRIMARY KEY (ws_item_sk, ws_order_number)
-) DISTKEY(ws_order_number) SORTKEY(ws_sold_date_sk);
+);
 
-CREATE TABLE IF NOT EXISTS catalog_sales
+CREATE TABLE IF NOT EXISTS tpcds.catalog_sales
 (
     cs_sold_date_sk           INT4,
     cs_sold_time_sk           INT4,
@@ -531,9 +531,9 @@ CREATE TABLE IF NOT EXISTS catalog_sales
     cs_net_paid_inc_ship_tax  NUMERIC(7,2),
     cs_net_profit             NUMERIC(7,2),
     PRIMARY KEY (cs_item_sk, cs_order_number)
-) DISTKEY(cs_item_sk) SORTKEY(cs_sold_date_sk);
+);
 
-CREATE TABLE IF NOT EXISTS store_sales
+CREATE TABLE IF NOT EXISTS tpcds.store_sales
 (
     ss_sold_date_sk           INT4,
     ss_sold_time_sk           INT4,
@@ -559,7 +559,7 @@ CREATE TABLE IF NOT EXISTS store_sales
     ss_net_paid_inc_tax       NUMERIC(7,2),
     ss_net_profit             NUMERIC(7,2),
     PRIMARY KEY (ss_item_sk, ss_ticket_number)
-) DISTKEY(ss_item_sk) SORTKEY(ss_sold_date_sk);
+);
 
 ------------------------------
 -- Data Loading via COPY Commands
