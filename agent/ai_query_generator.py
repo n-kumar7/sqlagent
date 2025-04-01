@@ -164,12 +164,13 @@ class AIQueryGenerator:
         filepath.write_text(f"-- {comment}\n{query}\n", encoding="utf-8")
         logger.info("Logged query #%d to file: %s", index, filename)
 
-    def generate_queries(self, goal: str, max_queries: int = 10):
+    def generate_queries(self, goal: str, num_queries: int):
         """
-        Generates queries based on the provided goal, logs them, and places them on the shared queue.
-
+        Generates a specified number of queries based on the provided goal, 
+        logs each query, and places them on the shared queue.
+        
         :param goal: The user-defined goal for query generation.
-        :param max_queries: Maximum number of queries to generate.
+        :param num_queries: Exact number of queries to generate.
         """
         system_prompt = f"""
 You are an expert data scientist and SQL specialist. You have the following schema:
@@ -178,40 +179,30 @@ You are an expert data scientist and SQL specialist. You have the following sche
 
 The user's goal is: {goal}
 
-Generate multiple Postgres-like queries to explore or analyze data relevant to this goal.
-Include a short comment (like '-- Purpose: ...') at the start of each query in a fenced code block:
-    ```sql
-    -- Purpose: ...
-    SELECT ...
-    ```
-When you are done, respond with "DONE" (outside any code block).
+IMPORTANT: Generate only ONE query that references columns and tables present in the schema above.
+Generate a valid Postgres-like SQL query that is complex and, if applicable, involves multiple joins.
+Include a short comment (like '-- Purpose: ...') at the top, all within a fenced code block:
+```sql
+-- Purpose: ...
+SELECT ...
+```
         """.strip()
-
-        messages = [{"role": "system", "content": system_prompt}]
-        query_count = 0
-        while query_count < max_queries:
-            user_prompt = (
-                "Please provide your next SQL query in a fenced code block, "
-                "or say DONE if you have no more queries."
-            )
+        
+        for i in range(1, num_queries + 1):
+            messages = [{"role": "system", "content": system_prompt}]
+            user_prompt = "Please provide one SQL query in a fenced code block."
             messages.append({"role": "user", "content": user_prompt})
             llm_output = self._generate_llm_message(messages)
-            messages.append({"role": "assistant", "content": llm_output})
-            logger.debug("LLM output: %s", llm_output)
-            if "DONE" in llm_output.upper():
-                logger.info("LLM indicated it is done generating queries.")
-                break
+            logger.debug("LLM output for query %d: %s", i, llm_output)
             query_str, comment = self._extract_sql_query_and_comment(llm_output)
-            if not query_str.strip():  # Skip if the query is empty
-                logger.warning("No SQL found in LLM output; stopping query generation.")
-                break
-            logger.debug("Placing query onto queue: %s", query_str)
-            query_count += 1
-            self._log_query_to_file(query_str, comment, query_count)
+            if not query_str.strip():
+                logger.warning("No SQL found in LLM output for query %d; skipping.", i)
+                continue
+            self._log_query_to_file(query_str, comment, i)
             msg = QueryMessage(query=query_str, comment=comment)
             self.shared_queue.put(msg)
-            logger.info("Placed query #%d on shared queue: %s", query_count, msg)
-        logger.info("Finished generating %d queries.", query_count)
+            logger.info("Placed query #%d on shared queue: %s", i, msg)
+        logger.info("Finished generating %d queries.", num_queries)
 
 
 def main():

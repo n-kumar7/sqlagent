@@ -89,7 +89,7 @@ def run_generator(config: dict, shared_queue):
     # Import AIQueryGenerator here to break circular dependency
     from agent.ai_query_generator import AIQueryGenerator
     generator = AIQueryGenerator(connection_str, shared_queue)
-    generator.generate_queries(goal=goal, max_queries=max_queries)
+    generator.generate_queries(goal=goal, num_queries=max_queries)
 
 def run_runner(config: dict, shared_queue):
     """
