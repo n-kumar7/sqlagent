@@ -100,11 +100,12 @@ def run_runner(config: dict, shared_queue):
     :param shared_queue: The shared queue for query messages.
     """
     connection_str = config["db_connection"]
+    concurrency = config.get("concurrency", 1)  # use configurable concurrency
     from workload.query_runner import QueryRunner
     runner = QueryRunner(
         connection_string=connection_str,
         shared_queue=shared_queue,
-        concurrency=3  # removed steady_state parameters
+        concurrency=concurrency  # updated value
     )
     # Run the ad-hoc queries concurrently.
     runner.run_concurrent_queries(timeout=60.0)
