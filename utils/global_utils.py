@@ -9,6 +9,8 @@ import datetime
 import json
 import logging
 import logging.config
+import os
+import openai
 
 def extract_fenced_code(text: str, language: str = "sql") -> str:
     """
@@ -79,14 +81,11 @@ def setup_logging():
 def run_generator(config: dict, shared_queue):
     """
     Runs the AI query generator process.
-    
-    :param config: The configuration dictionary.
-    :param shared_queue: The shared queue for query messages.
     """
-    import openai
-    openai.api_key = "YOUR_OPENAI_API_KEY"  # Securely set your API key.
+    openai.api_key = os.environ.get("OPENAI_API_KEY")
     connection_str = config["db_connection"]
     goal = config.get("goal", "No goal specified")
+    # Import AIQueryGenerator here to break circular dependency
     from agent.ai_query_generator import AIQueryGenerator
     generator = AIQueryGenerator(connection_str, shared_queue)
     generator.generate_queries(goal=goal, max_queries=10)
