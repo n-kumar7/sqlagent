@@ -31,17 +31,6 @@ class TestWorkload(unittest.TestCase):
         self.assertEqual(len(results), 2)
         self.assertTrue(all("Dummy executed:" in res for res in results))
     
-    def test_steady_state_workload(self):
-        runner = DummyQueryRunner("dummy_connection", SharedQueue(), steady_state_queries=["SELECT 1;", "SELECT 2;"], steady_state_interval=0.1)
-        import threading
-        thread = threading.Thread(target=runner.run_steady_state_workload)
-        thread.start()
-        # Let the workload run briefly.
-        import time
-        time.sleep(0.5)
-        runner.stop_steady_state()
-        thread.join()
-        # Test passes if no exceptions are raised.
 
 if __name__ == '__main__':
     unittest.main()

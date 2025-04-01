@@ -59,7 +59,7 @@ SELECT * FROM dummy_table_1;
 
     def test_generate_queries_queues_messages(self):
         """Test that queries are generated and placed on the shared queue."""
-        self.generator.generate_queries("Test goal", max_queries=2)
+        self.generator.generate_queries("Test goal", num_queries=2)
         messages = []
         while not self.dummy_queue.empty():
             messages.append(self.dummy_queue.get())
@@ -83,13 +83,13 @@ SELECT * FROM dummy_table_1;
     def test_edge_case_no_sql_in_response(self):
         """Test handling of LLM output with no SQL query."""
         with patch.object(self.generator, "_generate_llm_message", return_value="No SQL here"):
-            self.generator.generate_queries("Test goal", max_queries=1)
+            self.generator.generate_queries("Test goal", num_queries=1)
             self.assertTrue(self.dummy_queue.empty())
 
     def test_edge_case_no_comment_in_response(self):
         """Test handling of LLM output with no comment."""
         with patch.object(self.generator, "_generate_llm_message", return_value="```sql\nSELECT * FROM dummy_table;\n```"):
-            self.generator.generate_queries("Test goal", max_queries=1)
+            self.generator.generate_queries("Test goal", num_queries=1)
             msg = self.dummy_queue.get()
             self.assertEqual(msg.comment, "No purpose comment provided by LLM")
             self.assertIn("SELECT * FROM dummy_table;", msg.query)
