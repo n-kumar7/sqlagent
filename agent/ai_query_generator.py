@@ -104,9 +104,10 @@ class AIQueryGenerator:
         response = self.client.responses.create(
             model=self.model_name,
             input=messages,
+            temperature=self.temperature,
             max_output_tokens=1500
         )
-        return response.output[0].text.strip()
+        return response.output[0].content.strip()
 
     def _extract_sql_query_and_comment(self, llm_output: str):
         """
