@@ -85,10 +85,11 @@ def run_generator(config: dict, shared_queue):
     openai.api_key = os.environ.get("OPENAI_API_KEY")
     connection_str = config["db_connection"]
     goal = config.get("goal", "No goal specified")
+    max_queries = config.get("max_ad_hoc_queries", 10)  # use config value, default to 10
     # Import AIQueryGenerator here to break circular dependency
     from agent.ai_query_generator import AIQueryGenerator
     generator = AIQueryGenerator(connection_str, shared_queue)
-    generator.generate_queries(goal=goal, max_queries=10)
+    generator.generate_queries(goal=goal, max_queries=max_queries)
 
 def run_runner(config: dict, shared_queue):
     """
