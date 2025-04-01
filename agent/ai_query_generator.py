@@ -50,6 +50,7 @@ class AIQueryGenerator:
             file.unlink()
         self.model_name = model_name
         self.temperature = temperature
+        self.client = openai.OpenAI()  # Create the OpenAI client once on construction.
 
         try:
             self.conn = psycopg2.connect(self.connection_string)
@@ -98,23 +99,14 @@ class AIQueryGenerator:
 
     def _generate_llm_message(self, messages: List[dict]) -> str:
         """
-        Calls the OpenAI Responses API with a single prompt generated from messages.
-        
-        :param messages: A list of message dictionaries.
-        :return: The generated response text.
+        Calls the OpenAI Responses API using the stored client.
         """
-        # Convert messages list into a single prompt string.
-        prompt = "\n".join([f"{msg['role'].upper()}: {msg['content']}" for msg in messages])
-        logger.debug("Generated prompt for Responses API: %s", prompt)
-        response = openai.Responses.create(
+        response = self.client.responses.create(
             model=self.model_name,
-            prompt=prompt,
-            temperature=self.temperature,
-            max_tokens=512,
-            n=1,
-            stop=None
+            input=messages,
+            max_output_tokens=1500
         )
-        return response.choices[0].text.strip()
+        return response.output[0].text.strip()
 
     def _extract_sql_query_and_comment(self, llm_output: str):
         """
@@ -205,6 +197,13 @@ SELECT ...
             self.shared_queue.put(msg)
             logger.info("Placed query #%d on shared queue: %s", i, msg)
         logger.info("Finished generating %d queries.", num_queries)
+
+    def __del__(self):
+        """
+        Cleanup the stored OpenAI client if necessary.
+        """
+        if hasattr(self, 'client'):
+            del self.client
 
 
 def main():
