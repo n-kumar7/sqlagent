@@ -107,7 +107,8 @@ class AIQueryGenerator:
             temperature=self.temperature,
             max_output_tokens=1500
         )
-        return response.output[0].content.strip()
+        logger.debug(f"openai response: {response.output[0].content[0].text}")
+        return response.output[0].text.strip()
 
     def _extract_sql_query_and_comment(self, llm_output: str):
         """
