@@ -45,6 +45,9 @@ class AIQueryGenerator:
         # Initialize logs_dir as a Path object and ensure it exists.
         self.logs_dir = Path(logs_dir)
         self.logs_dir.mkdir(parents=True, exist_ok=True)
+        # Clean up existing query files in logs_dir
+        for file in self.logs_dir.glob("query_*.sql"):
+            file.unlink()
         self.model_name = model_name
         self.temperature = temperature
 
@@ -155,8 +158,8 @@ class AIQueryGenerator:
         :param comment: A brief comment describing the query.
         :param index: The sequential index of the query.
         """
-        timestamp = current_timestamp()
-        filename = f"query_{index}_{timestamp}.sql"
+        # Use a simplified filename without timestamp
+        filename = f"query_{index}.sql"
         filepath = self.logs_dir / filename
         filepath.write_text(f"-- {comment}\n{query}\n", encoding="utf-8")
         logger.info("Logged query #%d to file: %s", index, filename)
