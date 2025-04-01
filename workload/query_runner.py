@@ -80,7 +80,6 @@ class QueryRunner:
         duration = time.time() - start
         log_message = f"[RUNNER] {message} | Duration: {duration:.2f}s | Query: {query_str}"
         logger.info(log_message)
-        print(log_message)
         return log_message
 
     def run_concurrent_queries(self, timeout: float = 60.0) -> List[str]:
@@ -98,17 +97,14 @@ class QueryRunner:
             return self._execute_query(query_msg.query, query_msg.comment)
 
         with ThreadPoolExecutor(max_workers=self.concurrency) as executor:
-            while True:
-                if (time.time() - start_time) > timeout:
-                    logger.info("Timeout reached; stopping concurrent queries.")
-                    break
+            while (time.time() - start_time) < timeout:
                 try:
                     query_msg = self.shared_queue.get(block=True, timeout=1)
                     future = executor.submit(worker, query_msg)
                     futures.append(future)
                 except queue.Empty:
-                    if self.shared_queue.empty():
-                        break
+                    # Continue waiting until overall timeout is reached
+                    continue
             for f in as_completed(futures):
                 results.append(f.result())
         logger.info("All concurrent queries complete.")
