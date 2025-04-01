@@ -18,7 +18,7 @@ services:
     image: postgres:13
     container_name: postgres
     user: postgres
-    command: ["/usr/local/bin/docker-entrypoint.sh", "postgres", "-c", "max_wal_size=2GB", "-c", "logging_collector=on", "-c", "log_directory=/var/log/postgresql", "-c", "log_filename=postgresql.log"]
+    command: ["bash", "-c", "exec /usr/local/bin/docker-entrypoint.sh postgres -c max_wal_size=2GB -c logging_collector=on -c log_directory=/var/log/postgresql -c log_filename=postgresql.log 2>&1 | tee /var/log/postgresql/postgresql.log"]
     environment:
       - POSTGRES_USER=user
       - POSTGRES_PASSWORD=pass
