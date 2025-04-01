@@ -30,7 +30,7 @@ def current_timestamp() -> str:
     """
     Returns the current timestamp as a formatted string.
 
-    :return: A string representing the current timestamp (YYYYMMDD_HHMMSS).
+    :return: A string representing the current timestamp (YYYYMMDD_HH%M%S).
     """
     return datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
 
@@ -67,13 +67,13 @@ def setup_logging():
                 "class": "logging.FileHandler",
                 "formatter": "structured",
                 "filename": "logs/app.log",
-                "mode": "w",  # Change to write mode so that logs don't append
+                "mode": "w",
                 "level": "DEBUG",
             }
         },
         "root": {
             "handlers": ["console", "file"],
-            "level": "INFO",
+            "level": "DEBUG",
         }
     }
     logging.config.dictConfig(logging_config)
@@ -86,9 +86,10 @@ def run_generator(config: dict, shared_queue):
     connection_str = config["db_connection"]
     goal = config.get("goal", "No goal specified")
     max_queries = config.get("max_ad_hoc_queries", 10)  # use config value, default to 10
+    model_name = config.get("model_name", "gpt-3.5-turbo")  # configuration parameter used here
     # Import AIQueryGenerator here to break circular dependency
     from agent.ai_query_generator import AIQueryGenerator
-    generator = AIQueryGenerator(connection_str, shared_queue)
+    generator = AIQueryGenerator(connection_str, shared_queue, model_name=model_name)
     generator.generate_queries(goal=goal, num_queries=max_queries)
 
 def run_runner(config: dict, shared_queue):

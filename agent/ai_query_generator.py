@@ -98,18 +98,23 @@ class AIQueryGenerator:
 
     def _generate_llm_message(self, messages: List[dict]) -> str:
         """
-        Calls the OpenAI ChatCompletion API with the provided messages.
-
-        :param messages: A list of message dictionaries for the LLM.
-        :return: The response text from the LLM.
+        Calls the OpenAI Responses API with a single prompt generated from messages.
+        
+        :param messages: A list of message dictionaries.
+        :return: The generated response text.
         """
-        logger.debug("Sending message to LLM with %d messages.", len(messages))
-        response = openai.ChatCompletion.create(
+        # Convert messages list into a single prompt string.
+        prompt = "\n".join([f"{msg['role'].upper()}: {msg['content']}" for msg in messages])
+        logger.debug("Generated prompt for Responses API: %s", prompt)
+        response = openai.Responses.create(
             model=self.model_name,
-            messages=messages,
+            prompt=prompt,
             temperature=self.temperature,
+            max_tokens=512,
+            n=1,
+            stop=None
         )
-        return response["choices"][0]["message"]["content"]
+        return response.choices[0].text.strip()
 
     def _extract_sql_query_and_comment(self, llm_output: str):
         """
@@ -168,9 +173,6 @@ class AIQueryGenerator:
         """
         Generates a specified number of queries based on the provided goal, 
         logs each query, and places them on the shared queue.
-        
-        :param goal: The user-defined goal for query generation.
-        :param num_queries: Exact number of queries to generate.
         """
         system_prompt = f"""
 You are an expert data scientist and SQL specialist. You have the following schema:
@@ -179,9 +181,9 @@ You are an expert data scientist and SQL specialist. You have the following sche
 
 The user's goal is: {goal}
 
-IMPORTANT: Generate only ONE query that references columns and tables present in the schema above.
-Generate a valid Postgres-like SQL query that is complex and, if applicable, involves multiple joins.
-Include a short comment (like '-- Purpose: ...') at the top, all within a fenced code block:
+IMPORTANT: Generate ONLY ONE query per prompt that references ONLY the columns and tables listed in the schema above. Do NOT introduce any columns or tables that are not present in the schema. Ensure that the SQL is valid SQL.
+Generate a valid SQL query, using the Postgres syntax, that is complex and, if applicable, involves multiple joins.
+Include a short comment (like '-- Purpose: ...') as the first line inside a fenced SQL code block:
 ```sql
 -- Purpose: ...
 SELECT ...
