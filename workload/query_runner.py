@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 class QueryRunner:
     """
-    Executes queries from a shared queue concurrently and runs a steady-state workload.
+    Executes queries from a shared queue concurrently.
     """
 
     def __init__(
@@ -29,8 +29,6 @@ class QueryRunner:
         shared_queue: SharedQueue,
         logs_dir: str = "logs/runner",
         concurrency: int = 5,
-        steady_state_queries: List[str] = None,
-        steady_state_interval: float = 5.0,
     ):
         """
         Initialize the QueryRunner.
@@ -39,8 +37,6 @@ class QueryRunner:
         :param shared_queue: SharedQueue instance from which queries are consumed.
         :param logs_dir: Directory to log execution details.
         :param concurrency: Number of worker threads for concurrent execution.
-        :param steady_state_queries: A list of queries for steady-state workload.
-        :param steady_state_interval: Time in seconds between each steady-state execution.
         """
         self.connection_string = connection_string
         self.shared_queue = shared_queue
@@ -52,9 +48,6 @@ class QueryRunner:
             format="%(asctime)s | %(levelname)s | %(name)s | %(processName)s | %(message)s"
         )
         self.concurrency = concurrency
-        self.steady_state_queries = steady_state_queries or []
-        self.steady_state_interval = steady_state_interval
-        self._stop_steady_state = False
 
     def _execute_query(self, query_str: str, comment: str) -> str:
         """
@@ -110,23 +103,6 @@ class QueryRunner:
         logger.info("All concurrent queries complete.")
         return results
 
-    def run_steady_state_workload(self):
-        """
-        Runs the steady-state workload continuously until signaled to stop.
-        """
-        logger.info("Starting steady-state workload with %d queries.", len(self.steady_state_queries))
-        while not self._stop_steady_state:
-            for query in self.steady_state_queries:
-                self._execute_query(query, "steady state query")
-            time.sleep(self.steady_state_interval)
-
-    def stop_steady_state(self):
-        """
-        Signals the steady-state workload loop to stop.
-        """
-        self._stop_steady_state = True
-        logger.info("Steady-state workload signaled to stop.")
-
 def main():
     """
     Main function for testing the QueryRunner directly.
@@ -140,16 +116,10 @@ def main():
         connection_string=connection_str,
         shared_queue=shared_q,
         concurrency=3,
-        steady_state_queries=[
-            "SELECT COUNT(*) FROM public.orders;",
-            "SELECT AVG(total) FROM public.orders WHERE order_date >= NOW() - INTERVAL '1 day';"
-        ],
-        steady_state_interval=10.0
     )
     results = runner.run_concurrent_queries(timeout=60.0)
     for r in results:
         print(r)
-    runner.stop_steady_state()
 
 if __name__ == "__main__":
     main()

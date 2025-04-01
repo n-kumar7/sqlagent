@@ -100,22 +100,11 @@ def run_runner(config: dict, shared_queue):
     :param shared_queue: The shared queue for query messages.
     """
     connection_str = config["db_connection"]
-    steady_cfg = config.get("steady_state_workload", {})
-    steady_queries = steady_cfg.get("queries", [])
-    steady_interval = steady_cfg.get("interval", 5.0)
     from workload.query_runner import QueryRunner
     runner = QueryRunner(
         connection_string=connection_str,
         shared_queue=shared_queue,
-        concurrency=3,
-        steady_state_queries=steady_queries,
-        steady_state_interval=steady_interval
+        concurrency=3  # removed steady_state parameters
     )
-    # Run the steady-state workload in a background thread.
-    import threading
-    steady_thread = threading.Thread(target=runner.run_steady_state_workload, daemon=True)
-    steady_thread.start()
     # Run the ad-hoc queries concurrently.
     runner.run_concurrent_queries(timeout=60.0)
-    runner.stop_steady_state()
-    steady_thread.join()
