@@ -93,6 +93,7 @@ class QueryRunner(BaseAIAgent):
         )
         try:
             response_text = self.generate_response([{"role": "user", "content": prompt}])
+            logger.debug(f"Validation response: {response_text}")
             answer = response_text.strip().upper()
             if answer == "YES":
                 return True
@@ -112,7 +113,7 @@ class QueryRunner(BaseAIAgent):
             model=self.model_name,
             input=input_data,
             temperature=self.temperature,
-            max_output_tokens=10  # short response for validation
+            max_output_tokens=1500  # increased from 10 to meet minimum requirement
         )
         logger.debug(f"openai response: {response.output[0].content[0].text}")
         return response.output[0].content[0].text.strip()
