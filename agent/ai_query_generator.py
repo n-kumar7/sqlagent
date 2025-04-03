@@ -104,6 +104,10 @@ class AIQueryGenerator(BaseAIAgent):
         logger.debug(f"openai response: {response.output[0].content[0].text}")
         return response.output[0].content[0].text.strip()
 
+    def _generate_llm_message(self, messages: List[dict]) -> str:
+        # Delegate to the common generate_response method.
+        return self.generate_response(messages)
+
     def _extract_sql_query_and_comment(self, llm_output: str):
         """
         Extracts the SQL query and its purpose comment from the LLM output.
