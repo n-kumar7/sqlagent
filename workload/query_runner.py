@@ -82,7 +82,7 @@ class QueryRunner(BaseAIAgent):
 
     def validate_query(self, query: str, comment: str) -> bool:
         """
-        Evaluates the SQL query for validity and logical sense using OpenAI.
+        Evaluates the SQL query for validity and logical sense using the responses API.
         Incorporates the current database schema context.
         """
         schema_context = self.get_schema_context()
@@ -92,15 +92,8 @@ class QueryRunner(BaseAIAgent):
             f"Query:\n{query}\n\nComment:\n{comment}"
         )
         try:
-            response = openai.Completion.create(
-                model="gpt-3.5-turbo",
-                prompt=prompt,
-                temperature=0,
-                max_tokens=10,
-                n=1,
-                stop=["\n"]
-            )
-            answer = response.choices[0].text.strip().upper()
+            response_text = self.generate_response([{"role": "user", "content": prompt}])
+            answer = response_text.strip().upper()
             if answer == "YES":
                 return True
             else:
