@@ -16,29 +16,26 @@ from typing import List
 from queue_manager.shared_queue import SharedQueue
 from queue_manager.query_message import QueryMessage
 from utils.global_utils import current_timestamp
+from agent.base_ai_agent import BaseAIAgent
 
 logger = logging.getLogger(__name__)
 
-class QueryRunner:
+class QueryRunner(BaseAIAgent):
     """
     Executes queries from a shared queue concurrently.
+    Inherits common OpenAI and schema discovery functionality from BaseAIAgent.
     """
-
     def __init__(
         self,
         connection_string: str,
         shared_queue: SharedQueue,
         logs_dir: str = "logs/runner",
         concurrency: int = 5,
+        model_name: str = "gpt-3.5-turbo",
+        temperature: float = 0.0,  # Validator uses low temperature for determinism
     ):
-        """
-        Initialize the QueryRunner.
-
-        :param connection_string: Postgres connection string.
-        :param shared_queue: SharedQueue instance from which queries are consumed.
-        :param logs_dir: Directory to log execution details.
-        :param concurrency: Number of worker threads for concurrent execution.
-        """
+        # Initialize common AI functionality.
+        super().__init__(model_name, temperature)
         self.connection_string = connection_string
         self.shared_queue = shared_queue
         self.logs_dir = logs_dir
@@ -76,38 +73,19 @@ class QueryRunner:
         logger.info(log_message)
         return log_message
 
-    def _get_schema_context(self) -> str:
+    def get_schema_context(self) -> str:
         """
-        Retrieves and formats the current database schema by querying the INFORMATION_SCHEMA.
+        Retrieves schema context using BaseAIAgent shared methods.
         """
-        schema_dict = {}
-        query = """
-            SELECT table_schema, table_name, column_name
-            FROM information_schema.columns
-            WHERE table_schema NOT IN ('information_schema', 'pg_catalog')
-            ORDER BY table_schema, table_name, ordinal_position
-        """
-        try:
-            with psycopg2.connect(self.connection_string) as conn:
-                with conn.cursor() as cur:
-                    cur.execute(query)
-                    rows = cur.fetchall()
-            for (schema, table, column) in rows:
-                full_name = f"{schema}.{table}"
-                schema_dict.setdefault(full_name, []).append(column)
-            lines = [f"Table: {table}\n  Columns: {', '.join(cols)}\n" for table, cols in schema_dict.items()]
-            return "\n".join(lines)
-        except Exception as e:
-            logger.error("Failed to retrieve schema context: %s", e)
-            return "Schema context unavailable."
+        schema_dict = self._discover_schema(self.connection_string)
+        return self._format_schema_for_prompt(schema_dict)
 
     def validate_query(self, query: str, comment: str) -> bool:
         """
         Evaluates the SQL query for validity and logical sense using OpenAI.
-        Incorporates the current database schema context in the prompt.
-        Returns True if the AI's answer is "YES", else False.
+        Incorporates the current database schema context.
         """
-        schema_context = self._get_schema_context()
+        schema_context = self.get_schema_context()
         prompt = (
             f"Using the following schema context:\n{schema_context}\n\n"
             f"Is the following SQL query valid and does it make sense? Answer YES or NO.\n\n"

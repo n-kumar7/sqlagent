@@ -7,20 +7,21 @@ and discovered database schema. It logs each query to a file and places them as 
 from pathlib import Path
 import re
 import psycopg2
-import openai
 import logging
 from typing import Dict, List
 
 from utils.global_utils import extract_fenced_code, current_timestamp
 from queue_manager.query_message import QueryMessage
 from queue_manager.shared_queue import SharedQueue
+from agent.base_ai_agent import BaseAIAgent
 
 logger = logging.getLogger(__name__)
 
 
-class AIQueryGenerator:
+class AIQueryGenerator(BaseAIAgent):
     """
     Generates Postgres-like SQL queries using an LLM and places them onto a shared queue.
+    Inherits common OpenAI functionality from BaseAIAgent.
     """
 
     def __init__(
@@ -31,15 +32,8 @@ class AIQueryGenerator:
         model_name: str = "gpt-3.5-turbo",
         temperature: float = 0.7,
     ):
-        """
-        Initialize the AIQueryGenerator.
-
-        :param connection_string: Postgres connection string.
-        :param shared_queue: An instance of SharedQueue for inter-process communication.
-        :param logs_dir: Directory where SQL files will be logged.
-        :param model_name: The OpenAI model name to use.
-        :param temperature: Sampling temperature for the LLM.
-        """
+        # Initialize common AI client functionality.
+        super().__init__(model_name, temperature)
         self.connection_string = connection_string
         self.shared_queue = shared_queue
         # Initialize logs_dir as a Path object and ensure it exists.
@@ -50,7 +44,6 @@ class AIQueryGenerator:
             file.unlink()
         self.model_name = model_name
         self.temperature = temperature
-        self.client = openai.OpenAI()  # Create the OpenAI client once on construction.
 
         try:
             self.conn = psycopg2.connect(self.connection_string)
@@ -97,13 +90,14 @@ class AIQueryGenerator:
             lines.append(f"Table: {table}\n  Columns: {', '.join(cols)}\n")
         return "\n".join(lines)
 
-    def _generate_llm_message(self, messages: List[dict]) -> str:
+    def generate_response(self, input_data: List[dict]) -> str:
         """
-        Calls the OpenAI Responses API using the stored client.
+        Implements the abstract method from BaseAIAgent.
+        Here, input_data is expected to be a list of messages.
         """
         response = self.client.responses.create(
             model=self.model_name,
-            input=messages,
+            input=input_data,
             temperature=self.temperature,
             max_output_tokens=1500
         )
