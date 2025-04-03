@@ -9,6 +9,7 @@ import time
 import queue
 import logging
 import psycopg2
+import openai
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List
 
@@ -75,6 +76,62 @@ class QueryRunner:
         logger.info(log_message)
         return log_message
 
+    def _get_schema_context(self) -> str:
+        """
+        Retrieves and formats the current database schema by querying the INFORMATION_SCHEMA.
+        """
+        schema_dict = {}
+        query = """
+            SELECT table_schema, table_name, column_name
+            FROM information_schema.columns
+            WHERE table_schema NOT IN ('information_schema', 'pg_catalog')
+            ORDER BY table_schema, table_name, ordinal_position
+        """
+        try:
+            with psycopg2.connect(self.connection_string) as conn:
+                with conn.cursor() as cur:
+                    cur.execute(query)
+                    rows = cur.fetchall()
+            for (schema, table, column) in rows:
+                full_name = f"{schema}.{table}"
+                schema_dict.setdefault(full_name, []).append(column)
+            lines = [f"Table: {table}\n  Columns: {', '.join(cols)}\n" for table, cols in schema_dict.items()]
+            return "\n".join(lines)
+        except Exception as e:
+            logger.error("Failed to retrieve schema context: %s", e)
+            return "Schema context unavailable."
+
+    def validate_query(self, query: str, comment: str) -> bool:
+        """
+        Evaluates the SQL query for validity and logical sense using OpenAI.
+        Incorporates the current database schema context in the prompt.
+        Returns True if the AI's answer is "YES", else False.
+        """
+        schema_context = self._get_schema_context()
+        prompt = (
+            f"Using the following schema context:\n{schema_context}\n\n"
+            f"Is the following SQL query valid and does it make sense? Answer YES or NO.\n\n"
+            f"Query:\n{query}\n\nComment:\n{comment}"
+        )
+        try:
+            response = openai.Completion.create(
+                model="gpt-3.5-turbo",
+                prompt=prompt,
+                temperature=0,
+                max_tokens=10,
+                n=1,
+                stop=["\n"]
+            )
+            answer = response.choices[0].text.strip().upper()
+            if answer == "YES":
+                return True
+            else:
+                logger.warning("Query validation failed: %s", answer)
+                return False
+        except Exception as e:
+            logger.error("Error during query validation: %s", e)
+            return False
+
     def run_concurrent_queries(self, timeout: float = 60.0) -> List[str]:
         """
         Consumes QueryMessage objects from the shared queue and executes them concurrently.
@@ -87,6 +144,9 @@ class QueryRunner:
         results = []
 
         def worker(query_msg: QueryMessage):
+            # Validate the query before executing it.
+            if not self.validate_query(query_msg.query, query_msg.comment):
+                return f"Query skipped due to failed validation: {query_msg.comment}"
             return self._execute_query(query_msg.query, query_msg.comment)
 
         with ThreadPoolExecutor(max_workers=self.concurrency) as executor:
