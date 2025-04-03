@@ -103,6 +103,20 @@ class QueryRunner(BaseAIAgent):
             logger.error("Error during query validation: %s", e)
             return False
 
+    def generate_response(self, input_data: List[dict]) -> str:
+        """
+        Implements the abstract method from BaseAIAgent.
+        Uses the OpenAI Responses API to generate a short answer.
+        """
+        response = self.client.responses.create(
+            model=self.model_name,
+            input=input_data,
+            temperature=self.temperature,
+            max_output_tokens=10  # short response for validation
+        )
+        logger.debug(f"openai response: {response.output[0].content[0].text}")
+        return response.output[0].content[0].text.strip()
+
     def run_concurrent_queries(self, timeout: float = 60.0) -> List[str]:
         """
         Consumes QueryMessage objects from the shared queue and executes them concurrently.
