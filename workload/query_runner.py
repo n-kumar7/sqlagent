@@ -84,21 +84,27 @@ class QueryRunner(BaseAIAgent):
         """
         Evaluates the SQL query for validity and logical sense using the responses API.
         Incorporates the current database schema context.
+        Expects the AI to return a JSON object with keys:
+            approved (boolean) and explanation (string).
         """
         schema_context = self.get_schema_context()
         prompt = (
             f"Using the following schema context:\n{schema_context}\n\n"
-            f"Is the following SQL query valid and does it make sense? Answer YES or NO.\n\n"
+            f"Evaluate the following SQL query and return a JSON object with the following format:\n"
+            f'{{"approved": <boolean>, "explanation": "<brief explanation>"}}\n\n'
             f"Query:\n{query}\n\nComment:\n{comment}"
         )
         try:
             response_text = self.generate_response([{"role": "user", "content": prompt}])
             logger.debug(f"Validation response: {response_text}")
-            answer = response_text.strip().upper()
-            if answer == "YES":
+            import json
+            result = json.loads(response_text)
+            approved = result.get("approved", False)
+            explanation = result.get("explanation", "")
+            if approved:
                 return True
             else:
-                logger.warning("Query validation failed: %s", answer)
+                logger.warning("Query validation rejected: %s", explanation)
                 return False
         except Exception as e:
             logger.error("Error during query validation: %s", e)
